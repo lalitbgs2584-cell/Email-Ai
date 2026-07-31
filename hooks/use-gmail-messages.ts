@@ -5,13 +5,14 @@ async function fetchMessages(): Promise<EmailMessage[]> {
   const res = await fetch("/api/gmail/messages");
   if (!res.ok) throw new Error("Failed to fetch messages");
   const data = await res.json();
-  return data.messages;
+  return data.messages || [];
 }
 
-export function useGmailMessages() {
+export function useGmailMessages(enabled: boolean = true) {
   return useQuery({
     queryKey: ["gmail-messages"],
     queryFn: fetchMessages,
     staleTime: 30 * 1000,
+    enabled,
   });
 }

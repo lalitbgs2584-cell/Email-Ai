@@ -9,7 +9,7 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
+  provider = "postgresql"
 }
 
 model User {
@@ -23,6 +23,7 @@ model User {
   sessions      Session[]
   accounts      Account[]
   gmailAccount  GmailAccount?
+  workflows     Workflows[]
 
   @@unique([email])
   @@map("user")
@@ -77,16 +78,120 @@ model Verification {
 }
 
 model GmailAccount {
-  id           String   @id @default(cuid())
-  userId       String   @unique
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  gmailEmail   String
+  id String @id @default(cuid())
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  gmailEmail String
+
   accessToken  String
   refreshToken String
-  tokenExpiry  DateTime
-  connectedAt  DateTime @default(now())
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+
+  tokenExpiry DateTime
+
+  historyId String?
+
+  watchExpiration DateTime?
+
+  lastSyncedAt DateTime?
+
+  connectedAt   DateTime @default(now())
+  syncedCount   Int      @default(0)
+  nextPageToken String?
+  lastHistoryId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  emails Email[]
 
   @@map("gmail_account")
+}
+
+model Email {
+  id String @id @default(cuid())
+
+  gmailId  String @unique
+  threadId String
+
+  gmailAccountId String
+  gmailAccount   GmailAccount @relation(fields: [gmailAccountId], references: [id], onDelete: Cascade)
+
+  subject String
+  snippet String
+
+  fromEmail String
+  fromName  String?
+
+  receivedAt DateTime
+
+  isRead    Boolean @default(false)
+  isStarred Boolean @default(false)
+
+  category EmailCategory @default(OTHER)
+
+  priority Priority @default(MEDIUM)
+
+  summary String?
+
+  labels String[]
+
+  reminder DateTime?
+
+  processed Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([gmailAccountId])
+  @@index([category])
+}
+
+model Workflows {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type WorkflowType
+
+  status WorkflowStatus @default(PENDING)
+
+  progress Int? // 0-100
+
+  error String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum WorkflowType {
+  INITIAL_SCAN
+  NEW_EMAIL_SYNC
+  REANALYZE
+}
+
+enum WorkflowStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum EmailCategory {
+  IMPORTANT
+  WORK
+  PERSONAL
+  PROMOTION
+  NEWSLETTER
+  FINANCE
+  SOCIAL
+  OTHER
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
 }

@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
   try {
     const oauth2Client = getOAuthClient();
     const { tokens } = await oauth2Client.getToken(code);
-
+    console.log(tokens);
     if (!tokens.access_token) {
       throw new Error("No access_token returned from Google");
     }
